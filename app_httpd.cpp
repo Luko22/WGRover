@@ -496,6 +496,7 @@ static esp_err_t stream_handler(httpd_req_t *req) {
   size_t _jpg_buf_len = 0;
   uint8_t *_jpg_buf = NULL;
   char *part_buf[128];
+  
 #if CONFIG_ESP_FACE_DETECT_ENABLED
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
   bool detected = false;

@@ -1,37 +1,12 @@
 #include "esp_camera.h"
+#include "esp_http_server.h"
+
 #include <WiFi.h>
 #include <esp_now.h>
 #include <credentials.h>
-//
-// WARNING!!! PSRAM IC required for UXGA resolution and high JPEG quality
-//            Ensure ESP32 Wrover Module or other board with PSRAM is selected
-//            Partial images will be transmitted if image exceeds buffer size
-//
-//            You must select partition scheme from the board menu that has at least 3MB APP space.
-//            Face Recognition is DISABLED for ESP32 and ESP32-S2, because it takes up from 15
-//            seconds to process single frame. Face Detection is ENABLED if PSRAM is enabled as well
 
-// ===================
-// Select camera model
-// ===================
-//#define CAMERA_MODEL_WROVER_KIT // Has PSRAM
-// #define CAMERA_MODEL_ESP_EYE  // Has PSRAM
-//#define CAMERA_MODEL_ESP32S3_EYE // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_PSRAM // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_V2_PSRAM // M5Camera version B Has PSRAM
-//#define CAMERA_MODEL_M5STACK_WIDE // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_ESP32CAM // No PSRAM
-//#define CAMERA_MODEL_M5STACK_UNITCAM // No PSRAM
-//#define CAMERA_MODEL_M5STACK_CAMS3_UNIT  // Has PSRAM
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
-//#define CAMERA_MODEL_TTGO_T_JOURNAL // No PSRAM
-//#define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
-// ** Espressif Internal Boards **
-//#define CAMERA_MODEL_ESP32_CAM_BOARD
-//#define CAMERA_MODEL_ESP32S2_CAM_BOARD
-//#define CAMERA_MODEL_ESP32S3_CAM_LCD
-//#define CAMERA_MODEL_DFRobot_FireBeetle2_ESP32S3 // Has PSRAM
-//#define CAMERA_MODEL_DFRobot_Romeo_ESP32S3 // Has PSRAM
+
 #include "camera_pins.h"
 
 // ===========================
@@ -41,6 +16,7 @@ const char *ssid = mySSIDLap;
 const char *password = myPASSWORDLap;
 
 void startCameraServer();
+
 void setupLedFlash(int pin);
 
 
@@ -48,9 +24,8 @@ void setupLedFlash(int pin);
 typedef struct struct_message {
   int joyposV;
   int joyposH;
-  
-  // float c;
-  // bool d;
+  int pic;
+  int flash;
 } struct_message;
 // Create a struct_message called myData
 struct_message myData;
@@ -66,15 +41,15 @@ void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDat
 /* Motor A connections: 
 in1 and in2 pins are used to control the direction of Motor A
 connected to pin 13, pin 12 */
-int enA = 12; // GPIO32
-int in1 = 13; // GPIO33
+int enA = 2; // GPIO32
+int in1 = 14; // GPIO33
 int in2 = 15; // GPIO25
 /* Motor B connections: 
 in3 and in4 pins are used to control the direction of Motor B
 connected to pin 11, pin 10 */
-int enB = 14; // GPIO27 
-int in3 = 2; // GPIO14 
-int in4 = 4 ; // GPIO12
+int enB = enA; // GPIO27 
+int in3 = 13; // GPIO14 
+int in4 = 12 ; // GPIO12
 
 void setup() {
   Serial.begin(115200);
@@ -142,6 +117,9 @@ void setup() {
   }
 
   sensor_t *s = esp_camera_sensor_get();
+  s->set_hmirror(s, 1);
+  s->set_vflip(s, 1);
+
   // initial sensors are flipped vertically and colors are a bit saturated
   if (s->id.PID == OV3660_PID) {
     s->set_vflip(s, 1);        // flip it back
@@ -150,7 +128,7 @@ void setup() {
   }
   // drop down frame size for higher initial frame rate
   if (config.pixel_format == PIXFORMAT_JPEG) {
-    s->set_framesize(s, FRAMESIZE_QVGA);
+    s->set_framesize(s, FRAMESIZE_SVGA);
   }
 
 #if defined(CAMERA_MODEL_M5STACK_WIDE) || defined(CAMERA_MODEL_M5STACK_ESP32CAM)
@@ -178,6 +156,7 @@ void setup() {
   Serial.println("WiFi connected");
 
   startCameraServer();
+  // startCameraStream();
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
@@ -194,8 +173,8 @@ void setup() {
     // get recv packer info
     esp_now_register_recv_cb(OnDataRecv);
     
-    // pinMode(JoyX, INPUT);
-    // pinMode(JoyY, INPUT);
+// pins initiation
+    pinMode(4, OUTPUT);
 
     pinMode(enA, OUTPUT);
     pinMode(enB, OUTPUT);
@@ -305,6 +284,19 @@ delay(50);
     digitalWrite(in4, HIGH);
     delay(50);
   } 
+
+  if(myData.flash == 1){
+    digitalWrite(4, HIGH);
+  }else{ 
+    digitalWrite(4, LOW);
+  }
+
+  if(myData.pic == 1){
+    Serial.println("");
+    Serial.println("Taking pic");
+    Serial.println("");
+    delay(1000);
+  }else{ }
 
   delay(50);
 }
