@@ -1,3 +1,12 @@
+// Blynk streaming footage from 
+
+// set up:
+// joyX drive
+// joxY turn
+// flash
+// 
+// camX
+// camY
 #include "esp_camera.h"
 #include "esp_http_server.h"
 
@@ -8,6 +17,17 @@
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
 
 #include "camera_pins.h"
+
+#define BLYNK_PRINT Serial
+
+/* Fill in information from Blynk Device Info here */
+#define BLYNK_TEMPLATE_NAME "WGExplorer"
+#define BLYNK_AUTH_TOKEN "4WZnAisRWhzUnqEVPNjPX-fEpxUhpl3M"
+#define BLYNK_TEMPLATE_ID "TMPL44pBMj3_j"
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
 
 // ===========================
 // Enter your WiFi credentials
@@ -159,8 +179,7 @@ void setup() {
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
-  Serial.print(":81/stream");
-  Serial.println("' to connect directly to the video stream");
+  Serial.println("' to connect");
 
   // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
@@ -172,6 +191,8 @@ void setup() {
     // Once ESPNow is successfully Init, we will register for recv CB to
     // get recv packer info
     esp_now_register_recv_cb(OnDataRecv);
+
+    Blynk.begin(BLYNK_AUTH_TOKEN, ssid, password);
     
 // pins initiation
     pinMode(4, OUTPUT);
@@ -193,6 +214,14 @@ void setup() {
 }
 
 void loop() {
+
+  Blynk.run();
+
+  String u = "http://"+WiFi.localIP().toString()+":81/stream  ";
+
+ Blynk.virtualWrite(V0, u);
+
+ Serial.print(u);
 
   int joyposV = myData.joyposV;
   int joyposH = myData.joyposH;
@@ -301,3 +330,4 @@ delay(50);
 
   delay(50);
 }
+
