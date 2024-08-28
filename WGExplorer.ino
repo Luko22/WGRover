@@ -1,6 +1,8 @@
 #include "esp_camera.h"
 #include "esp_http_server.h"
 
+#include "SD_MMC.h"
+
 #include <WiFi.h>
 #include <esp_now.h>
 #include <credentials.h>
@@ -156,7 +158,6 @@ void setup() {
   Serial.println("WiFi connected");
 
   startCameraServer();
-  // startCameraStream();
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
@@ -296,6 +297,7 @@ delay(50);
     Serial.println("Taking pic");
     Serial.println("");
     delay(1000);
+    // Serial.println("Saving");
   }else{ }
 
   delay(50);
