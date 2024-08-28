@@ -161,7 +161,8 @@ void setup() {
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
-  Serial.println("' to connect");
+  Serial.print(":81/stream");
+  Serial.println("' to connect directly to the video stream");
 
   // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
