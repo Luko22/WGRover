@@ -219,19 +219,18 @@ void loop() {
   int driveL = map(joyposH, incLim, 4095, 90, 100);
 
 delay(50);
-
-
-  Serial.print(joyposV);
-  Serial.print("  |  ");
-  Serial.print(driveD);
-  Serial.print("  |  ");
-  Serial.print(driveB);
-  Serial.print("  |||  ");
-  Serial.print(joyposH);
-  Serial.print("  |  ");
-  Serial.print(driveL);
-  Serial.print("  |  ");
-  Serial.println(driveR);
+// to make sure joystick values are received properly
+  // Serial.print(joyposV);
+  // Serial.print("  |  ");
+  // Serial.print(driveD);
+  // Serial.print("  |  ");
+  // Serial.print(driveB);
+  // Serial.print("  |||  ");
+  // Serial.print(joyposH);
+  // Serial.print("  |  ");
+  // Serial.print(driveL);
+  // Serial.print("  |  ");
+  // Serial.println(driveR);
   
   //Forwards
   if(joyposV<decLim){
@@ -245,7 +244,7 @@ delay(50);
     // motor B CW ^ (backwards)
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);
-  delay(50);
+  delay(10);
     } else if(joyposV>incLim){//Backwards
       
 
@@ -259,44 +258,43 @@ delay(50);
     // motor B CW ^ (forward)
     digitalWrite(in3, HIGH);
     digitalWrite(in4, LOW);
-  delay(50);
+  delay(10);
   } else{
     // Turn off motors
     digitalWrite(in1, LOW);
     digitalWrite(in2, LOW);
     digitalWrite(in3, LOW);
     digitalWrite(in4, LOW);
-  delay(50);
+  delay(10);
   }
 
-//Rotation
+//Rotation (Inverted)
   if(joyposH<decLim){
-    //rot R
+    //rot L (changed from R)
     analogWrite(enA, driveR);
     analogWrite(enB, driveR);
   
-    // motor A CCW
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-
-    // motor B CW ^
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
-    delay(100);
-
-    } else if(joyposH>incLim){
-      //rot L
-    analogWrite(enA, driveL);
-    analogWrite(enB, driveL);
-  
-   // motor A CW ^ 
+    // motor A CW ^ (changed from CCW)
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);
 
-  // motor B CCW 
+    // motor B CCW (changed from CW ^)
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);
-    delay(100);
+    delay(10);
+  } else if(joyposH>incLim){
+    //rot R (changed from L)
+    analogWrite(enA, driveL);
+    analogWrite(enB, driveL);
+  
+    // motor A CCW (changed from CW ^)
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, HIGH);
+
+    // motor B CW ^ (changed from CCW)
+    digitalWrite(in3, HIGH);
+    digitalWrite(in4, LOW);
+    delay(10);
   } 
 
   digitalWrite(4, flash == 1 ? HIGH : LOW);
@@ -305,7 +303,7 @@ delay(50);
     Serial.println("");
     Serial.println("Taking pic");
     Serial.println("");
-    delay(1000);
+    delay(500);
   }
 
   delay(50);
