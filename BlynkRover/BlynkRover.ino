@@ -17,8 +17,6 @@
 
 #include "camera_pins.h"
 
-
-
 const char *ssid = mySSIDLap;
 const char *password = myPASSWORDLap;
 
