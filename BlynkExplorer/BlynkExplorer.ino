@@ -1,23 +1,5 @@
-// Blynk streaming footage from 
-
-// set up:
-// joyX drive
-// joxY turn
-// flash
-// 
-// camX
-// camY
-#include "esp_camera.h"
-#include "esp_http_server.h"
-
-#include <WiFi.h>
-#include <esp_now.h>
+// Blynk streaming footage from WGExplorer
 #include <credentials.h>
-
-#define CAMERA_MODEL_AI_THINKER // Has PSRAM
-
-#include "camera_pins.h"
-
 #define BLYNK_PRINT Serial
 
 /* Fill in information from Blynk Device Info here */
@@ -28,35 +10,21 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
+#include "esp_camera.h"
+#include "esp_http_server.h"
 
-// ===========================
-// Enter your WiFi credentials
-// ===========================
+#define CAMERA_MODEL_AI_THINKER // Has PSRAM
+
+#include "camera_pins.h"
+
+
+
 const char *ssid = mySSIDLap;
 const char *password = myPASSWORDLap;
 
 void startCameraServer();
 
 void setupLedFlash(int pin);
-
-
-// Must match the receiver structure
-typedef struct struct_message {
-  int joyposV;
-  int joyposH;
-  int pic;
-  int flash;
-} struct_message;
-// Create a struct_message called myData
-struct_message myData;
-// callback function that will be executed when data is received
-void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
-  // Serial.print("Bytes received: ");
-  // Serial.print(myData.joyposV);
-  // Serial.print("  |||  ");
-  // Serial.println(myData.joyposH);
-}
 
 /* Motor A connections: 
 in1 and in2 pins are used to control the direction of Motor A
@@ -70,6 +38,26 @@ connected to pin 11, pin 10 */
 int enB = enA; // GPIO27 
 int in3 = 13; // GPIO14 
 int in4 = 12 ; // GPIO12
+
+int joyposV = 1800;
+int joyposH = 1800;
+int flash, pic;
+
+BLYNK_WRITE(V1) {
+  joyposV = param.asInt();
+}
+
+BLYNK_WRITE(V2) {
+  joyposH = param.asInt();
+}
+
+BLYNK_WRITE(V3) {
+  flash = param.asInt();
+}
+
+BLYNK_WRITE(V4) {
+  pic = param.asInt();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -183,16 +171,9 @@ void setup() {
 
   // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
-    // Init ESP-NOW
-    if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-    }
-    // Once ESPNow is successfully Init, we will register for recv CB to
-    // get recv packer info
-    esp_now_register_recv_cb(OnDataRecv);
 
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, password);
+    Serial.println();
     
 // pins initiation
     pinMode(4, OUTPUT);
@@ -209,23 +190,24 @@ void setup() {
     digitalWrite(in3, LOW);
     digitalWrite(in4, LOW);
 
-    delay(1000);
     initDrive(90);
+
+    String u = "http://"+WiFi.localIP().toString()+":81/stream";
+    Serial.println(u);
+    Blynk.virtualWrite(V0, u);
+    // Blynk.setProperty(V0, "url", u);
+    delay(1000);
 }
 
 void loop() {
 
   Blynk.run();
 
-  String u = "http://"+WiFi.localIP().toString()+":81/stream  ";
-
- Blynk.virtualWrite(V0, u);
-
- Serial.print(u);
-
-  int joyposV = myData.joyposV;
-  int joyposH = myData.joyposH;
-
+  // String u = "http://"+WiFi.localIP().toString()+":81/stream";
+  
+  // Serial.println(u);
+  // Serial.print("V0= ");
+  // Serial.println(V0);
 
   int decLim = 1000;
   int incLim = 3000;
@@ -233,8 +215,8 @@ void loop() {
   int driveD = map(joyposV, decLim, 0, 90, 255);
   int driveB = map(joyposV, incLim, 4095, 90, 255);
 
-  int driveR = map(joyposH, incLim, 0, 90, 120);
-  int driveL = map(joyposH, incLim, 4095, 90, 120);
+  int driveR = map(joyposH, incLim, 0, 90, 100);
+  int driveL = map(joyposH, incLim, 4095, 90, 100);
 
 delay(50);
 
@@ -251,8 +233,22 @@ delay(50);
   Serial.print("  |  ");
   Serial.println(driveR);
   
-  //Forward and Back
+  //Forwards
   if(joyposV<decLim){
+    //map then drive backwards
+    analogWrite(enA, driveB);
+    analogWrite(enB, driveB);
+  
+    // motor A CW ^ (backwards)
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, HIGH);
+    // motor B CW ^ (backwards)
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
+  delay(50);
+    } else if(joyposV>incLim){//Backwards
+      
+
     //map then drive forwards
     analogWrite(enA, driveD);
     analogWrite(enB, driveD);
@@ -263,18 +259,6 @@ delay(50);
     // motor B CW ^ (forward)
     digitalWrite(in3, HIGH);
     digitalWrite(in4, LOW);
-  delay(50);
-    } else if(joyposV>incLim){
-      //moves back
-    analogWrite(enA, driveB);
-    analogWrite(enB, driveB);
-  
-   // motor A CCW (backwards)
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-  // motor B CCW (backwards)
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
   delay(50);
   } else{
     // Turn off motors
@@ -288,7 +272,7 @@ delay(50);
 //Rotation
   if(joyposH<decLim){
     //rot R
-    // analogWrite(enA, driveR);
+    analogWrite(enA, driveR);
     analogWrite(enB, driveR);
   
     // motor A CCW
@@ -298,7 +282,8 @@ delay(50);
     // motor B CW ^
     digitalWrite(in3, HIGH);
     digitalWrite(in4, LOW);
-    delay(50);
+    delay(100);
+
     } else if(joyposH>incLim){
       //rot L
     analogWrite(enA, driveL);
@@ -311,22 +296,17 @@ delay(50);
   // motor B CCW 
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);
-    delay(50);
+    delay(100);
   } 
 
-  if(myData.flash == 1){
-    digitalWrite(4, HIGH);
-  }else{ 
-    digitalWrite(4, LOW);
-  }
+  digitalWrite(4, flash == 1 ? HIGH : LOW);
 
-  if(myData.pic == 1){
+  if (pic == 1) {
     Serial.println("");
     Serial.println("Taking pic");
     Serial.println("");
     delay(1000);
-    // Serial.println("Saving");
-  }else{ }
+  }
 
   delay(50);
 }
