@@ -12,8 +12,6 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-// const char *ssid = "FAMILIA LUKOKI12";
-// const char *password = "Lukoki***2025";
 const char *ssid = mySSID;
 const char *password = myPASSWORD;
 
